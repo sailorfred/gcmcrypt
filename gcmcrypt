@@ -9,8 +9,11 @@ from cryptography.hazmat.primitives.ciphers import (
 import os
 import sys
 
-def read_key():
+
+def read_key(noprompt=False):
     key = b''
+    if not noprompt:
+        os.write(2, b'Enter key or passphrase, ending with EOF: ')
     for l in sys.stdin:
         l = l.rstrip()
         if sys.version_info[0] > 2:  # bytes for python 3
@@ -18,6 +21,7 @@ def read_key():
         key += l
 
     return key
+
 
 def encrypt(key, f):
     iv = os.urandom(12)
@@ -40,7 +44,13 @@ def encrypt(key, f):
             break
         os.write(1, encryptor.update(line))
 
+
 def decrypt(key, f):
+    # Check file has enough data to be encrypted
+    f.seek(0, 2)
+    assert f.tell() >= 28, 'File too small to have been encrypted by gcmcrypt'
+    # Back to the start
+    f.seek(0, 0)
     iv = f.read(12)
     # Grab the tag from the end of the file
     f.seek(-16, 2)
@@ -57,7 +67,7 @@ def decrypt(key, f):
 
     while True:
         if size > 0:
-            line = f.read(min(65536,size))
+            line = f.read(min(65536, size))
             size -= len(line)
         else:
             line = b''
@@ -72,13 +82,16 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-k', '--key', help='Hex key from stdin',
                         action='store_true')
+    parser.add_argument('-n', '--noprompt',
+                        help='Do not prompt for key or passphrase on stderr',
+                        action='store_true')
     parser.add_argument('-p', '--passphrase', help='Passphrase from stdin',
                         action='store_true')
     parser.add_argument('file', help="File to encrypt or decrypt")
     args = parser.parse_args()
     if args.key == args.passphrase:
         raise ValueError('Must specify one of -k or -p')
-    key = read_key()
+    key = read_key(noprompt=args.noprompt)
     if args.passphrase:
         sha256 = hashes.Hash(hashes.SHA256(), backend=default_backend())
         sha256.update(key)

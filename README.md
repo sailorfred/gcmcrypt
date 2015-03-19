@@ -5,7 +5,7 @@ authentication tag
 The IV and authentication tag are stored in the output file, using this
 format:
 
-<first 12 bytes is the IV><ciphertext><last 32 bytes is authentication tag>
+<first 12 bytes is the IV><ciphertext><last 16 bytes is authentication tag>
 
 There is no additional authenticated data.
 
@@ -27,7 +27,7 @@ Usage:
 
 Encryption:
 
-gcmcrypt [ -d ] [ -k | -p ] <file>
+gcmcrypt [ -d ] [ -k | -p ] [ -n ] <file>
 
 For security against other users on the system using ps, stdin
 must consist of the key or passphrase.  It will have whitespace
@@ -42,3 +42,14 @@ Be sure to use a cryptographically secure method for generating keys.
 -p or --passphrase passphrase says to read a passphrase from stdin.
 Trailing white space will be stripped from it, and it will be run through
 a SHA256 hash to provide the key.
+
+-n or --noprompt doesn't prompt the user for the key or passphrase on
+stderr.
+
+Caveats:
+
+Under python 2.x, two ^Ds are required to start the encryption.
+
+In the interests of minimizing memory usage during decryption of large files,
+unauthenticated plaintext is output to stdout.  Callers must verify a zero
+(success) status code.
