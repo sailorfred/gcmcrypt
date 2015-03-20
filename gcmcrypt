@@ -6,6 +6,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import (
     Cipher, algorithms, modes)
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import os
 import sys
 
@@ -23,8 +24,13 @@ def read_key(noprompt=False):
     return key
 
 
-def encrypt(key, f):
-    iv = os.urandom(12)
+def encrypt(key, f, key_is_passphrase=True):
+    rnd = os.urandom(12)  # Either salt or iv, depending on key_is_passphrase
+    os.write(1, rnd)  # Write to stdout on 1 for Python 2, 3 portability
+    if key_is_passphrase:
+        iv, key = iv_and_key_from_salt(rnd, key)
+    else:
+        iv = rnd
     # Construct an AES-GCM Cipher object with the given key and a
     # randomly generated IV.
     encryptor = Cipher(
@@ -36,7 +42,6 @@ def encrypt(key, f):
     # it must also be passed in on decryption.
     encryptor.authenticate_additional_data(b'')
 
-    os.write(1, iv)  # Write to stdout on 1 for Python 2, 3 portability
     while True:
         line = f.read(65536)
         if len(line) == 0:  # Finished
@@ -45,13 +50,10 @@ def encrypt(key, f):
         os.write(1, encryptor.update(line))
 
 
-def decrypt(key, f):
+def decrypt(iv, key, f):
     # Check file has enough data to be encrypted
     f.seek(0, 2)
     assert f.tell() >= 28, 'File too small to have been encrypted by gcmcrypt'
-    # Back to the start
-    f.seek(0, 0)
-    iv = f.read(12)
     # Grab the tag from the end of the file
     f.seek(-16, 2)
     size = f.tell() - 12  # Size of ciphertext
@@ -76,6 +78,19 @@ def decrypt(key, f):
             break
         os.write(1, decryptor.update(line))
 
+
+def iv_and_key_from_salt(salt, passphrase):
+    default_backend()
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=44,
+        salt=salt,
+        iterations=100000,
+        backend=default_backend())
+    h = kdf.derive(passphrase)
+
+    return h[:12], h[12:]
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--decrypt', help='Decrypt rather then encrypt',
@@ -93,17 +108,22 @@ if __name__ == '__main__':
         raise ValueError('Must specify one of -k or -p')
     key = read_key(noprompt=args.noprompt)
     if args.passphrase:
-        sha256 = hashes.Hash(hashes.SHA256(), backend=default_backend())
-        sha256.update(key)
-        key = sha256.finalize()
+        key_is_passphrase = True
     else:
+        key_is_passphrase = False
         key = binascii.unhexlify(key)
         assert len(key) == 32, 'Key must be 64 hex digits, got {l}'.format(
             l=len(key) * 2)
     with open(args.file, 'rb') as fd:
         if args.decrypt:
-            decrypt(key, fd)
+            salt = fd.read(12)
+            if key_is_passphrase:
+                assert len(salt) == 12, "Can't read enough from encrypted file"
+                iv, key = iv_and_key_from_salt(salt, key)
+            else:
+                iv = salt
+            decrypt(iv, key, fd)
         else:
-            encrypt(key, fd)
+            encrypt(key, fd, key_is_passphrase=key_is_passphrase)
 
     exit(0)
