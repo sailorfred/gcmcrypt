@@ -41,7 +41,7 @@ Be sure to use a cryptographically secure method for generating keys.
 
 -p or --passphrase passphrase says to read a passphrase from stdin.
 Trailing white space will be stripped from it, and it will be run through
-a SHA256 hash to provide the key.
+PBKDF2 to provide the key.
 
 -n or --noprompt doesn't prompt the user for the key or passphrase on
 stderr.
