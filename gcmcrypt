@@ -24,8 +24,8 @@ def read_key(noprompt=False):
     return key
 
 
-def encrypt(key, f, key_is_passphrase=True):
-    rnd = os.urandom(12)  # Either salt or iv, depending on key_is_passphrase
+def encrypt(key, f, bytes, key_is_passphrase=True):
+    rnd = os.urandom(bytes)  # Either salt or iv, depending on key_is_passphrase
     os.write(1, rnd)  # Write to stdout on 1 for Python 2, 3 portability
     if key_is_passphrase:
         iv, key = iv_and_key_from_salt(rnd, key)
@@ -53,13 +53,13 @@ def encrypt(key, f, key_is_passphrase=True):
 def decrypt(iv, key, f):
     # Check file has enough data to be encrypted
     f.seek(0, 2)
-    assert f.tell() >= 28, 'File too small to have been encrypted by gcmcrypt'
+    assert f.tell() >= (len(iv) + 16), 'File too small to have been encrypted by gcmcrypt'
     # Grab the tag from the end of the file
     f.seek(-16, 2)
-    size = f.tell() - 12  # Size of ciphertext
+    size = f.tell() - len(iv)  # Size of ciphertext
     tag = f.read(16)
     assert len(tag) == 16
-    f.seek(12, 0)  # Back to start of ciphertext
+    f.seek(len(iv), 0)  # Back to start of ciphertext
     # Cipher object with tag, and empty associated data
     decryptor = Cipher(
         algorithms.AES(key),
@@ -83,17 +83,20 @@ def iv_and_key_from_salt(salt, passphrase):
     default_backend()
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
-        length=44,
+        length=len(salt) + 32,
         salt=salt,
         iterations=100000,
         backend=default_backend())
     h = kdf.derive(passphrase)
 
-    return h[:12], h[12:]
+    return h[:len(salt)], h[len(salt):]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--decrypt', help='Decrypt rather then encrypt',
+    parser.add_argument('-b', '--bits',
+                        help='Number of bits in IV or salt, defaults to 96',
+                        type=int, default=96)
+    parser.add_argument('-d', '--decrypt', help='Decrypt rather than encrypt',
                         action='store_true')
     parser.add_argument('-k', '--key', help='Hex key from stdin',
                         action='store_true')
@@ -106,6 +109,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.key == args.passphrase:
         raise ValueError('Must specify one of -k or -p')
+    assert args.bits % 8 == 0, 'bits in IV or salt must be a multiple of 8'
+    bytes = args.bits // 8
     key = read_key(noprompt=args.noprompt)
     if args.passphrase:
         key_is_passphrase = True
@@ -116,14 +121,14 @@ if __name__ == '__main__':
             l=len(key) * 2)
     with open(args.file, 'rb') as fd:
         if args.decrypt:
-            salt = fd.read(12)
+            salt = fd.read(bytes)
             if key_is_passphrase:
-                assert len(salt) == 12, "Can't read enough from encrypted file"
+                assert len(salt) == bytes, "Can't read enough from encrypted file"
                 iv, key = iv_and_key_from_salt(salt, key)
             else:
                 iv = salt
             decrypt(iv, key, fd)
         else:
-            encrypt(key, fd, key_is_passphrase=key_is_passphrase)
+            encrypt(key, fd, bytes, key_is_passphrase=key_is_passphrase)
 
     exit(0)
