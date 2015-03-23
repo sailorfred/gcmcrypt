@@ -24,9 +24,9 @@ def read_key(noprompt=False):
     return key
 
 
-def encrypt(key, f, bytes, key_is_passphrase=True):
+def encrypt(key, f, outfd, bytes, key_is_passphrase=True):
     rnd = os.urandom(bytes)  # Either salt or iv, depending on key_is_passphrase
-    os.write(1, rnd)  # Write to stdout on 1 for Python 2, 3 portability
+    os.write(outfd, rnd)  # Write to fd for Python 2, 3 portability
     if key_is_passphrase:
         iv, key = iv_and_key_from_salt(rnd, key)
     else:
@@ -45,12 +45,12 @@ def encrypt(key, f, bytes, key_is_passphrase=True):
     while True:
         line = f.read(65536)
         if len(line) == 0:  # Finished
-            os.write(1, encryptor.finalize() + encryptor.tag)
+            os.write(outfd, encryptor.finalize() + encryptor.tag)
             break
         os.write(1, encryptor.update(line))
 
 
-def decrypt(iv, key, f):
+def decrypt(iv, key, f, outfd):
     # Check file has enough data to be encrypted
     f.seek(0, 2)
     assert f.tell() >= (len(iv) + 16), 'File too small to have been encrypted by gcmcrypt'
@@ -74,9 +74,9 @@ def decrypt(iv, key, f):
         else:
             line = b''
         if len(line) == 0:  # Finished
-            os.write(1, decryptor.finalize())
+            os.write(outfd, decryptor.finalize())
             break
-        os.write(1, decryptor.update(line))
+        os.write(outfd, decryptor.update(line))
 
 
 def iv_and_key_from_salt(salt, passphrase):
@@ -103,6 +103,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--noprompt',
                         help='Do not prompt for key or passphrase on stderr',
                         action='store_true')
+    parser.add_argument('-o', '--out',
+                        help='Output to file instead of stdout')
     parser.add_argument('-p', '--passphrase', help='Passphrase from stdin',
                         action='store_true')
     parser.add_argument('file', help="File to encrypt or decrypt")
@@ -119,16 +121,33 @@ if __name__ == '__main__':
         key = binascii.unhexlify(key)
         assert len(key) == 32, 'Key must be 64 hex digits, got {l}'.format(
             l=len(key) * 2)
-    with open(args.file, 'rb') as fd:
-        if args.decrypt:
-            salt = fd.read(bytes)
-            if key_is_passphrase:
-                assert len(salt) == bytes, "Can't read enough from encrypted file"
-                iv, key = iv_and_key_from_salt(salt, key)
+    if args.out is None or args.out == '-':
+        outfd = 1  # stdout
+    else:
+        outfile = open(args.out, 'wb')
+        outfd = outfile.fileno()
+    try:
+        with open(args.file, 'rb') as fd:
+            if args.decrypt:
+                salt = fd.read(bytes)
+                if key_is_passphrase:
+                    assert len(salt) == bytes, "Can't read enough from encrypted file"
+                    iv, key = iv_and_key_from_salt(salt, key)
+                else:
+                    iv = salt
+                decrypt(iv, key, fd, outfd)
             else:
-                iv = salt
-            decrypt(iv, key, fd)
-        else:
-            encrypt(key, fd, bytes, key_is_passphrase=key_is_passphrase)
+                encrypt(key, fd, outfd, bytes, key_is_passphrase=key_is_passphrase)
+    except Exception:
+        if outfd !=1:
+            outfile.close()
+            try:
+                os.unlink(args.out)
+            except Exception:
+                pass
+        raise  # Let the caller know what happened
+
+    if outfd != 1:  # Not stdout
+        outfile.close()
 
     exit(0)

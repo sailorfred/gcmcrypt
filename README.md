@@ -27,7 +27,7 @@ Usage:
 
 Encryption:
 
-gcmcrypt [ -d ] [ -k | -p ] [ -n ] <file>
+gcmcrypt [ -d ] [ -k | -p ] [ -n ] [ -o <outfile> ] <file>
 
 For security against other users on the system using ps, stdin
 must consist of the key or passphrase.  It will have whitespace
@@ -46,10 +46,16 @@ PBKDF2 to provide the key.
 -n or --noprompt doesn't prompt the user for the key or passphrase on
 stderr.
 
+-o or --out specifies the output file to use instead of stdout
+
 Caveats:
 
 Under python 2.x, two ^Ds are required to start the encryption.
 
 In the interests of minimizing memory usage during decryption of large files,
 unauthenticated plaintext is output to stdout.  Callers must verify a zero
-(success) status code.
+(success) status code.  Example:
+
+gcmcrypt -d -k file.gcm > file || rm file && false
+
+If --out is used, the file will be removed when there's a bad status.
