@@ -47,7 +47,7 @@ def encrypt(key, f, outfd, bytes, key_is_passphrase=True):
         if len(line) == 0:  # Finished
             os.write(outfd, encryptor.finalize() + encryptor.tag)
             break
-        os.write(1, encryptor.update(line))
+        os.write(outfd, encryptor.update(line))
 
 
 def decrypt(iv, key, f, outfd):
