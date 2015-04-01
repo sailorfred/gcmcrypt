@@ -60,6 +60,8 @@ gcmcrypt.py -d -k file.gcm > file || rm file && false
 
 If --out is used, the file will be removed when there's a bad status.
 
+C++ Version:
+
 The Python CFFI makes the cryptography library load very slowly, so there
 is also a C++ version for performance.
 
@@ -67,3 +69,19 @@ It doesn't currently understand these switches:
 
 -b (--bits)
 -p (--passphrase)
+
+To build:
+
+make
+
+To install to /usr/local/bin:
+
+sudo make install
+
+To install to other location that ends in .../usr/local/bin:
+
+sudo make PREFIX=/chroot install
+
+To install to other directory:
+
+sudo make INSTALL_BIN_DIR=/opt/bin install
