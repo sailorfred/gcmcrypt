@@ -1,4 +1,4 @@
-# gcmcrypt
+# gcmcrypt.py
 Command line AES256-GCM file encryption with 96 bit IV and 128 bit
 authentication tag
 
@@ -27,7 +27,7 @@ Usage:
 
 Encryption:
 
-gcmcrypt [ -d ] [ -k | -p ] [ -n ] [ -o <outfile> ] <file>
+gcmcrypt.py [ -d ] [ -k | -p ] [ -n ] [ -o <outfile> ] <file>
 
 For security against other users on the system using ps, stdin
 must consist of the key or passphrase.  It will have whitespace
@@ -56,6 +56,14 @@ In the interests of minimizing memory usage during decryption of large files,
 unauthenticated plaintext is output to stdout.  Callers must verify a zero
 (success) status code.  Example:
 
-gcmcrypt -d -k file.gcm > file || rm file && false
+gcmcrypt.py -d -k file.gcm > file || rm file && false
 
 If --out is used, the file will be removed when there's a bad status.
+
+The Python CFFI makes the cryptography library load very slowly, so there
+is also a C++ version for performance.
+
+It doesn't currently understand these switches:
+
+-b (--bits)
+-p (--passphrase)
