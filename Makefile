@@ -11,7 +11,7 @@ gcmcrypt: gcmcrypt.cpp $(OPENSSL)/libcrypto.a
 $(OPENSSL)/libcrypto.a: $(OPENSSL)/Makefile
 	cd $(OPENSSL) && ./config && make
 
-$(OPENSSL): $(OPENSSL_TGZ)
+$(OPENSSL)/Makefile: $(OPENSSL_TGZ)
 	tar zxvf $(OPENSSL_TGZ)
 
 $(OPENSSL_TGZ):
