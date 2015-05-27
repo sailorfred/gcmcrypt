@@ -192,7 +192,7 @@ gcm_decrypt( int fd, size_t file_len, unsigned char *key_buf )
     exit( 1 );
   }
   while ( to_read > 0 ) {
-    bytes_read = read( fd, in_buf, std::min( 65536, int( to_read ) ) );
+    bytes_read = read( fd, in_buf, std::min( (size_t) 65536, to_read ) );
     if ( bytes_read < 1 ) {
       cerr << "Couldn't read file" << endl;
       exit( 1 );

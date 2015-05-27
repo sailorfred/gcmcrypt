@@ -8,7 +8,7 @@ INSTALL_BIN_DIR=$(PREFIX)/usr/local/bin
 gcmcrypt: gcmcrypt.cpp $(OPENSSL)/libcrypto.a
 	g++ -o $@ gcmcrypt.cpp -I$(OPENSSL)/include -L$(OPENSSL) -lcrypto -ldl
 
-$(OPENSSL)/libcrypto.a: $(OPENSSL)
+$(OPENSSL)/libcrypto.a: $(OPENSSL)/Makefile
 	cd $(OPENSSL) && ./config && make
 
 $(OPENSSL): $(OPENSSL_TGZ)
