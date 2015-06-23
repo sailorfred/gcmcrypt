@@ -23,8 +23,8 @@ $(OPENSSL)/Makefile: $(OPENSSL_TGZ)
 
 $(OPENSSL_TGZ):
 	curl -O $(OPENSSL_URL)
-	test `openssl md5 < $(OPENSSL_TGZ)` = $(OPENSSL_MD5)
-	test `openssl sha1 < $(OPENSSL_TGZ)` = $(OPENSSL_SHA1)
+	test `openssl md5 < $(OPENSSL_TGZ) | sed -e 's/^.*= //` = $(OPENSSL_MD5)
+	test `openssl sha1 < $(OPENSSL_TGZ)| sed -e 's/^.*= //` = $(OPENSSL_SHA1)
 
 $(INSTALL_BIN_DIR):
 	mkdir -p $@
