@@ -1,9 +1,9 @@
-OPENSSL_VERSION=1.0.2d
+OPENSSL_VERSION=1.0.2e
 OPENSSL=openssl-$(OPENSSL_VERSION)
 OPENSSL_TGZ=$(OPENSSL).tar.gz
 OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_TGZ)
-OPENSSL_MD5=38dd619b2e77cbac69b99f52a053d25a
-OPENSSL_SHA1=d01d17b44663e8ffa6a33a5a30053779d9593c3d
+OPENSSL_SHA256=e23ccafdb75cfcde782da0151731aa2185195ac745eea3846133f2e05c0e0bff
+OPENSSL_SHA1=2c5691496761cb18f98476eefa4d35c835448fb6
 INSTALL_BIN_DIR=$(PREFIX)/usr/local/bin
 
 ifeq ($(shell uname), Darwin)
@@ -23,7 +23,7 @@ $(OPENSSL)/Makefile: $(OPENSSL_TGZ)
 
 $(OPENSSL_TGZ):
 	curl -O $(OPENSSL_URL) || (rm -f $@ ; false)
-	(test `openssl md5 < $(OPENSSL_TGZ) | sed -e 's/^.*= //'` = $(OPENSSL_MD5) ) || (rm -f $@ ; false)
+	(test `openssl sha256 < $(OPENSSL_TGZ) | sed -e 's/^.*= //'` = $(OPENSSL_SHA256) ) || (rm -f $@ ; false)
 	(test `openssl sha1 < $(OPENSSL_TGZ)| sed -e 's/^.*= //'` = $(OPENSSL_SHA1) ) || (rm -f $@ ; false)
 
 $(INSTALL_BIN_DIR):
