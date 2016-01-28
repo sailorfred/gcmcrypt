@@ -1,9 +1,11 @@
-OPENSSL_VERSION=1.0.2e
+VERSION=1.0.2
+
+OPENSSL_VERSION=1.0.2f
 OPENSSL=openssl-$(OPENSSL_VERSION)
 OPENSSL_TGZ=$(OPENSSL).tar.gz
 OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_TGZ)
-OPENSSL_SHA256=e23ccafdb75cfcde782da0151731aa2185195ac745eea3846133f2e05c0e0bff
-OPENSSL_SHA1=2c5691496761cb18f98476eefa4d35c835448fb6
+OPENSSL_SHA256=932b4ee4def2b434f85435d9e3e19ca8ba99ce9a065a61524b429a9d5e9b2e9c
+OPENSSL_SHA1=2047c592a6e5a42bd37970bdb4a931428110a927
 INSTALL_BIN_DIR=$(PREFIX)/usr/local/bin
 
 ifeq ($(shell uname), Darwin)
@@ -13,7 +15,7 @@ CONFIG_OPENSSL=./config
 endif
 
 gcmcrypt: gcmcrypt.cpp $(OPENSSL)/libcrypto.a
-	g++ -o $@ gcmcrypt.cpp -I$(OPENSSL)/include -L$(OPENSSL) -lcrypto -ldl
+	g++ -o $@ gcmcrypt.cpp -DVERSION='"'$(VERSION)'"' -I$(OPENSSL)/include -L$(OPENSSL) -lcrypto -ldl
 
 $(OPENSSL)/libcrypto.a: $(OPENSSL)/Makefile
 	cd $(OPENSSL) && $(CONFIG_OPENSSL) && make

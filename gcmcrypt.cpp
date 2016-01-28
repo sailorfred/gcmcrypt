@@ -1,5 +1,6 @@
 #include <openssl/aes.h>
 #include <openssl/evp.h>
+#include <openssl/opensslv.h>
 #include <openssl/rand.h>
 #include <algorithm>
 #include <string>
@@ -33,13 +34,14 @@ parse_args( int argc, char **argv )
     { "key",      no_argument,        0, 'k'},
     { "noprompt", no_argument,        0, 'n'},
     { "out",      required_argument,  0, 'o'},
+    { "version",  no_argument,        0, 'v'},
     {0,0,0,0},
   };
 
   int c = 0;
 
   while ( c != -1 ) {
-    c = getopt_long( argc, argv, "dkno:", longopts, 0 );
+    c = getopt_long( argc, argv, "dkno:v", longopts, 0 );
     switch ( c ) {
     case 'd':
       opt_decrypt = true;
@@ -53,6 +55,9 @@ parse_args( int argc, char **argv )
     case 'o':
       opt_out = optarg;
       break;
+    case 'v':
+      cerr << "gcmcrypt " << VERSION << " -- " << OPENSSL_VERSION_TEXT << endl;
+      exit( 0 );
     case -1:
       break;
     default:
