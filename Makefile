@@ -1,4 +1,4 @@
-VERSION=1.0.7
+VERSION=1.0.8
 
 OPENSSL_VERSION=1.0.2n
 OPENSSL=openssl-$(OPENSSL_VERSION)
@@ -9,7 +9,7 @@ OPENSSL_SHA1=0ca2957869206de193603eca6d89f532f61680b1
 INSTALL_BIN_DIR=$(PREFIX)/usr/local/bin
 
 ifeq ($(shell uname), Darwin)
-CONFIG_OPENSSL=./Configure darwin64-x86_64-cc enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3 no-comp --openssldir=/usr/local/ssl/macos-x86_64
+CONFIG_OPENSSL=./Configure darwin64-x86_64-cc enable-ec_nistp_64_gcc_128 no-ssl2 no-ssl3
 else
 CONFIG_OPENSSL=./config
 endif
